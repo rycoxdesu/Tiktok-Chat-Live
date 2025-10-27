@@ -1,0 +1,19 @@
+{
+  "name": "tiktok-overlay",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js",
+    "pack": "electron-packager . TikTokOverlay --platform=win32 --arch=x64 --out=dist --overwrite --asar --icon=icon.ico"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "electron": "^25.2.0",
+    "tiktok-live-connector": "^2.0.0",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
+}
