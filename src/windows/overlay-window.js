@@ -24,7 +24,7 @@ function createWindow() {
   win.loadFile("src/frontend/html/index.html");
 
   console.log(
-    `${colors.magenta}🎨 Overlay window created! Ready to start chat stream~${colors.reset}`
+    `${colors.magenta}[Overlay] Window created! Ready to start chat stream~${colors.reset}`
   );
 
   setupIpcHandlers();
@@ -38,7 +38,7 @@ function setupIpcHandlers() {
     // overlay click-through setelah input username
     win.setIgnoreMouseEvents(true, { forward: true });
     console.log(
-      `${colors.green}✅ Overlay is now click-through!${colors.reset}`
+      `${colors.green}[Overlay] Is now click-through!${colors.reset}`
     );
   });
 

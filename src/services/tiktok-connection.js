@@ -7,6 +7,17 @@ let liveConnection = null;
 let reconnectTimer = null;
 let isConnecting = false;
 
+// Function to sanitize text from problematic Unicode characters
+function sanitizeText(text) {
+  if (typeof text !== 'string') return text;
+  
+  // Replace problematic Unicode characters with safe alternatives
+  return text
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+    .replace(/[\u2000-\u200F\u2028-\u2029\u202A-\u202E\u2060-\u206F]/g, '') // Remove invisible formatting characters
+    .replace(/[^\x20-\x7E\u00A0-\uD7FF\uE000-\uFFFD]/g, '?'); // Replace any remaining non-printable Unicode with '?'
+}
+
 function connectTikTok() {
   if (!tiktokUsername) return;
   if (isConnecting) return;
@@ -35,7 +46,7 @@ function connectTikTok() {
     .connect()
     .then(() => {
       console.log(
-        `${colors.green}🌸 Connected TikTok Live: ${tiktokUsername} 🌸${colors.reset}`
+        `${colors.green}[TikTok] Connected to Live: ${tiktokUsername} [TikTok]${colors.reset}`
       );
       isConnecting = false;
       if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -43,7 +54,7 @@ function connectTikTok() {
     })
     .catch((err) => {
       console.log(
-        `${colors.yellow}⚠️ Failed to connect... retry in 10s 💦${colors.reset}`
+        `${colors.yellow}[WARNING] Failed to connect... retry in 10s${colors.reset}`
       );
       isConnecting = false;
       if (!reconnectTimer)
@@ -83,41 +94,47 @@ function connectTikTok() {
     else if (role === "follower") color = colors.green;
     else if (role === "friend") color = colors.cyan;
 
+    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId);
+    const sanitizedComment = sanitizeText(data.comment);
+    
     const msg = {
       type: "chat",
-      user: data.nickname || data.uniqueId,
-      comment: data.comment,
+      user: sanitizedUser,
+      comment: sanitizedComment,
       role: role,
     };
 
     console.log(
-      `${color}💬 [${role.toUpperCase()}] ${msg.user}: ${msg.comment}${
+      `${color}[CHAT] [${role.toUpperCase()}] ${msg.user}: ${msg.comment}${
         colors.reset
       }`
     );
-    console.log(`${colors.yellow}➡️ Sending WS payload:${colors.reset}`, msg);
+    console.log(`${colors.yellow}[WS] Sending payload:${colors.reset}`, msg);
 
     broadcastToClients(msg);
   });
 
   // ===== Gift Event =====
   liveConnection.on("gift", (data) => {
+    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId);
+    const sanitizedGift = sanitizeText(data.giftName);
+    
     const msg = {
       type: "gift",
-      user: data.nickname || data.uniqueId,
-      gift: data.giftName,
+      user: sanitizedUser,
+      gift: sanitizedGift,
       amount: data.repeatCount || 1,
     };
     console.log(
-      `${colors.cyan}🎁 Gift from ${msg.user}: ${msg.gift} x${msg.amount}${colors.reset}`
+      `${colors.cyan}[GIFT] Gift from ${msg.user}: ${msg.gift} x${msg.amount}${colors.reset}`
     );
     broadcastToClients(msg);
   });
 
   // ===== Follower Event =====
   liveConnection.on("follow", (data) => {
-    const user = data.uniqueId || "unknown";
-    console.log(`🎉 ${user} baru saja mengikuti host!`);
+    const user = sanitizeText(data.uniqueId) || "unknown";
+    console.log(`[FOLLOW] ${user} baru saja mengikuti host!`);
 
     const msg = { type: "follow", user };
     broadcastToClients(msg);
@@ -125,8 +142,8 @@ function connectTikTok() {
 
   // ===== Share Event =====
   liveConnection.on("share", (data) => {
-    const user = data.uniqueId || "unknown";
-    console.log(`🔗 ${user} membagikan live-mu!`);
+    const user = sanitizeText(data.uniqueId) || "unknown";
+    console.log(`[SHARE] ${user} membagikan live-mu!`);
 
     const msg = { type: "share", user };
     broadcastToClients(msg);
@@ -136,12 +153,12 @@ function connectTikTok() {
   const handleDisconnect = (err) => {
     if (err && err.message)
       console.warn(
-        `${colors.yellow}TikTok connection error:${colors.reset}`,
+        `${colors.yellow}[TikTok] Connection error:${colors.reset}`,
         err.message
       );
     else
       console.log(
-        `${colors.yellow}⚠️ TikTok disconnected or error... retry in 10s 💨${colors.reset}`
+        `${colors.yellow}[TikTok] Disconnected or error... retry in 10s${colors.reset}`
       );
     isConnecting = false;
     if (!reconnectTimer)
@@ -153,9 +170,9 @@ function connectTikTok() {
 }
 
 function setTikTokUsername(username) {
-  tiktokUsername = username;
+  tiktokUsername = sanitizeText(username);
   console.log(
-    `${colors.blue}🎯 Username set: ${tiktokUsername}${colors.reset}`
+    `${colors.blue}[TikTok] Username set: ${tiktokUsername}${colors.reset}`
   );
   connectTikTok();
 }

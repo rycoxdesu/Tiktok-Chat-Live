@@ -11,6 +11,17 @@ const queue = [];
 let showing = false;
 let ws;
 
+// Function to sanitize text from problematic Unicode characters for frontend display
+function sanitizeText(text) {
+  if (typeof text !== 'string') return text;
+  
+  // Replace problematic Unicode characters with safe alternatives
+  return text
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+    .replace(/[\u2000-\u200F\u2028-\u2029\u202A-\u202E\u2060-\u206F]/g, '') // Remove invisible formatting characters
+    .replace(/[^\x20-\x7E\u00A0-\uD7FF\uE000-\uFFFD]/g, '?'); // Replace any remaining non-printable Unicode with '?'
+}
+
 function trimMessages() {
   const allMessages = chat.querySelectorAll(
     ".message, .message-follow, .message-share"
@@ -67,45 +78,14 @@ document.addEventListener("mouseup", () => {
 });
 usernameModal.style.cursor = "grab";
 
-// End Live button functionality
-const endBtn = document.getElementById("endBtn");
-endBtn.addEventListener("click", () => {
-  if (
-    confirm(
-      "Are you sure you want to end the live stream and close the application?"
-    )
-  ) {
-    // Close the Electron app properly via IPC
-    if (window.require) {
-      const { ipcRenderer } = window.require("electron");
-      ipcRenderer.send("close-app");
-    } else {
-      window.close();
-    }
-  }
-});
 
-// Keyboard shortcut - End key untuk close aplikasi
-document.addEventListener("keydown", (e) => {
-  if (e.key === "End") {
-    if (
-      confirm(
-        "Are you sure you want to end the live stream and close the application?"
-      )
-    ) {
-      // Close the Electron app properly via IPC
-      if (window.require) {
-        const { ipcRenderer } = window.require("electron");
-        ipcRenderer.send("close-app");
-      } else {
-        window.close();
-      }
-    }
-  }
-});
 
 // Messages Queue
 function addMessage(username, text, role = "user", sticker = null) {
+  // Sanitize inputs to prevent display issues
+  username = sanitizeText(username);
+  text = sanitizeText(text);
+  
   role = (role || "user").toLowerCase();
   let roleBadge = "";
   switch (role) {
@@ -168,6 +148,10 @@ const activeGift = { msg: null };
 const giftQueue = [];
 let processingGift = false;
 function showGift(user, gift, amount) {
+  // Sanitize inputs to prevent display issues
+  user = sanitizeText(user);
+  gift = sanitizeText(gift);
+  
   giftQueue.push({ user, gift, amount });
   if (!processingGift) processGiftQueue();
 }
@@ -208,6 +192,10 @@ async function processGiftQueue() {
 
 // Follow / Share
 function addFollowMessage(username, text) {
+  // Sanitize inputs to prevent display issues
+  username = sanitizeText(username);
+  text = sanitizeText(text);
+  
   const msg = document.createElement("div");
   msg.className = "message message-follow";
   msg.innerHTML = `<span>✨ ${username} ${text}</span>`;
@@ -216,6 +204,10 @@ function addFollowMessage(username, text) {
   trimMessages();
 }
 function addShareMessage(username, text) {
+  // Sanitize inputs to prevent display issues
+  username = sanitizeText(username);
+  text = sanitizeText(text);
+  
   const msg = document.createElement("div");
   msg.className = "message message-share";
   msg.innerHTML = `<span>🔗 ${username} ${text}</span>`;

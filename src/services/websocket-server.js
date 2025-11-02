@@ -8,9 +8,14 @@ function initializeWebSocketServer() {
 
   wss.on("connection", () =>
     console.log(
-      `${colors.cyan}🖥️  Overlay connected! Ready to show chat & gifts~${colors.reset}`
+      `${colors.cyan}[WS] Overlay connected! Ready to show chat & gifts~${colors.reset}`
     )
   );
+
+  // Add error handling for WebSocket connections
+  wss.on("error", (err) => {
+    console.error(`${colors.red}[WS] WebSocket Server Error:${colors.reset}`, err);
+  });
 
   return wss;
 }
