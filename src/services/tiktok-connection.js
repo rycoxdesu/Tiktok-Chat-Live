@@ -1,21 +1,16 @@
 const { WebcastPushConnection } = require("tiktok-live-connector");
 const { colors, reconnectInterval } = require("../config/constants");
 const { broadcastToClients } = require("./websocket-server");
+const { advancedSanitizeText } = require("../utils/text-sanitizer");
 
 let tiktokUsername = null;
 let liveConnection = null;
 let reconnectTimer = null;
 let isConnecting = false;
 
-// Function to sanitize text from problematic Unicode characters
+// Function to sanitize text using the advanced sanitizer
 function sanitizeText(text) {
-  if (typeof text !== 'string') return text;
-  
-  // Replace problematic Unicode characters with safe alternatives
-  return text
-    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
-    .replace(/[\u2000-\u200F\u2028-\u2029\u202A-\u202E\u2060-\u206F]/g, '') // Remove invisible formatting characters
-    .replace(/[^\x20-\x7E\u00A0-\uD7FF\uE000-\uFFFD]/g, '?'); // Replace any remaining non-printable Unicode with '?'
+  return advancedSanitizeText(text);
 }
 
 function connectTikTok() {
@@ -63,6 +58,23 @@ function connectTikTok() {
 
   // ===== Chat Event =====
   liveConnection.on("chat", (data) => {
+    // Log raw data for debugging
+    console.log(`${colors.blue}[DEBUG] Raw chat data:${colors.reset}`, {
+      nickname: data.nickname,
+      uniqueId: data.uniqueId,
+      comment: data.comment,
+      isModerator: data.isModerator,
+      userIdentity: data.userIdentity,
+      isSubscriber: data.isSubscriber,
+      userBadges: data.userBadges
+    });
+
+    // Check if data is valid
+    if (!data || typeof data !== 'object') {
+      console.warn(`${colors.yellow}[WARNING] Invalid chat data received${colors.reset}`);
+      return;
+    }
+
     let role = "user";
 
     try {
@@ -94,8 +106,15 @@ function connectTikTok() {
     else if (role === "follower") color = colors.green;
     else if (role === "friend") color = colors.cyan;
 
-    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId);
-    const sanitizedComment = sanitizeText(data.comment);
+    // Sanitize user and comment data
+    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId || 'Unknown User');
+    const sanitizedComment = sanitizeText(data.comment || '');
+    
+    // Check if sanitized comment is empty
+    if (!sanitizedComment || sanitizedComment.trim() === '') {
+      console.log(`${colors.yellow}[INFO] Empty comment after sanitization from user: ${sanitizedUser}${colors.reset}`);
+      return; // Skip empty comments
+    }
     
     const msg = {
       type: "chat",
@@ -116,8 +135,27 @@ function connectTikTok() {
 
   // ===== Gift Event =====
   liveConnection.on("gift", (data) => {
-    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId);
-    const sanitizedGift = sanitizeText(data.giftName);
+    // Log raw data for debugging
+    console.log(`${colors.blue}[DEBUG] Raw gift data:${colors.reset}`, {
+      nickname: data.nickname,
+      uniqueId: data.uniqueId,
+      giftName: data.giftName,
+      repeatCount: data.repeatCount
+    });
+
+    if (!data || typeof data !== 'object') {
+      console.warn(`${colors.yellow}[WARNING] Invalid gift data received${colors.reset}`);
+      return;
+    }
+
+    const sanitizedUser = sanitizeText(data.nickname || data.uniqueId || 'Unknown User');
+    const sanitizedGift = sanitizeText(data.giftName || 'Unknown Gift');
+    
+    // Check if essential data is available after sanitization
+    if (!sanitizedUser || !sanitizedGift) {
+      console.warn(`${colors.yellow}[WARNING] Missing user or gift info after sanitization${colors.reset}`);
+      return;
+    }
     
     const msg = {
       type: "gift",
@@ -133,6 +171,16 @@ function connectTikTok() {
 
   // ===== Follower Event =====
   liveConnection.on("follow", (data) => {
+    // Log raw data for debugging
+    console.log(`${colors.blue}[DEBUG] Raw follow data:${colors.reset}`, {
+      uniqueId: data.uniqueId
+    });
+
+    if (!data || typeof data !== 'object') {
+      console.warn(`${colors.yellow}[WARNING] Invalid follow data received${colors.reset}`);
+      return;
+    }
+
     const user = sanitizeText(data.uniqueId) || "unknown";
     console.log(`[FOLLOW] ${user} baru saja mengikuti host!`);
 
@@ -142,6 +190,16 @@ function connectTikTok() {
 
   // ===== Share Event =====
   liveConnection.on("share", (data) => {
+    // Log raw data for debugging
+    console.log(`${colors.blue}[DEBUG] Raw share data:${colors.reset}`, {
+      uniqueId: data.uniqueId
+    });
+
+    if (!data || typeof data !== 'object') {
+      console.warn(`${colors.yellow}[WARNING] Invalid share data received${colors.reset}`);
+      return;
+    }
+
     const user = sanitizeText(data.uniqueId) || "unknown";
     console.log(`[SHARE] ${user} membagikan live-mu!`);
 
@@ -151,29 +209,68 @@ function connectTikTok() {
 
   // ===== Reconnect jika disconnect/error =====
   const handleDisconnect = (err) => {
-    if (err && err.message)
+    if (err && err.message) {
       console.warn(
         `${colors.yellow}[TikTok] Connection error:${colors.reset}`,
         err.message
       );
-    else
+    } else {
       console.log(
         `${colors.yellow}[TikTok] Disconnected or error... retry in 10s${colors.reset}`
       );
+    }
+    
+    // Clear any existing reconnect timer to prevent multiple timers
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    
     isConnecting = false;
-    if (!reconnectTimer)
-      reconnectTimer = setTimeout(connectTikTok, reconnectInterval);
+    
+    // Attempt to reconnect after the specified interval
+    console.log(
+      `${colors.yellow}[TikTok] Scheduling reconnect in ${reconnectInterval}ms${colors.reset}`
+    );
+    reconnectTimer = setTimeout(connectTikTok, reconnectInterval);
   };
 
+  // Add more specific event handlers for better diagnostics
   liveConnection.on("close", handleDisconnect);
   liveConnection.on("error", handleDisconnect);
+  
+  // Add listeners for connection state changes
+  liveConnection.on("connect", () => {
+    console.log(`${colors.green}[TikTok] Connection established!${colors.reset}`);
+  });
+  
+  liveConnection.on("roomUser", (data) => {
+    // Log room user data without necessarily broadcasting it
+    console.log(`${colors.blue}[DEBUG] Room user update:${colors.reset}`, {
+      id: data.userId,
+      nickname: data.nickname,
+      level: data.level
+    });
+  });
 }
 
 function setTikTokUsername(username) {
+  if (!username || typeof username !== 'string' || username.trim() === '') {
+    console.error(`${colors.red}[ERROR] Invalid TikTok username provided${colors.reset}`);
+    return;
+  }
+  
   tiktokUsername = sanitizeText(username);
   console.log(
     `${colors.blue}[TikTok] Username set: ${tiktokUsername}${colors.reset}`
   );
+  
+  // Ensure we're not already connecting before starting a new connection
+  if (isConnecting) {
+    console.log(`${colors.yellow}[INFO] Connection already in progress, skipping duplicate connection attempt${colors.reset}`);
+    return;
+  }
+  
   connectTikTok();
 }
 

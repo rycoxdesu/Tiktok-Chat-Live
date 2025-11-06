@@ -1,4 +1,4 @@
-﻿const chat = document.getElementById("chat");
+const chat = document.getElementById("chat");
 const usernameModal = document.getElementById("usernameModal");
 const usernameInput = document.getElementById("usernameInput");
 const startBtn = document.getElementById("startBtn");

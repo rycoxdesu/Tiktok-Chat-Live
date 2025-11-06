@@ -3,54 +3,56 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TikTok Chat Overlay</title>
+    <title>TikTok Live Overlay</title>
     <link rel="stylesheet" href="../css/style.css" />
   </head>
   <body>
     <div id="usernameModal" class="neko-modal">
-      <h3>🐾 Neko's Live Chat 🐾</h3>
+      <h3>🐾 TikTok Live Chat Overlay 🐾</h3>
       <input
         id="usernameInput"
         type="text"
-        placeholder="Masukkan username TikTok"
+        placeholder="Enter TikTok username (without @)"
+        autocomplete="off"
       />
       <div class="button-group">
-        <button id="editGiftBtn" class="neko-btn gift-btn">
-          Edit Gift Overlay 🎁
+        <button id="startBtn" class="neko-btn start-btn">
+          <span>▶️</span> Start Stream
         </button>
-        <button id="startBtn" class="neko-btn start-btn">Start Live 🐱</button>
         <button id="editChatBtn" class="neko-btn chat-btn">
-          Edit Chat Overlay 💬
+          <span>💬</span> Chat Settings
+        </button>
+        <button id="editGiftBtn" class="neko-btn gift-btn">
+          <span>🎁</span> Gift Settings
         </button>
       </div>
+      <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-top: 15px; text-align: center;">
+        Enter the TikTok username of the live stream you want to follow
+      </p>
     </div>
 
     <div id="chatWrapper">
       <div class="handle" id="chatHandle"></div>
       <div id="chat">
         <div class="message-follow show">
-          <span>🎉 @new_follower baru saja mengikuti kamu! 🎉</span>
+          <span>🎉 New follower just joined! 🎉</span>
         </div>
         <div class="message-share show">
-          <span>🔗 @userabc membagikan live-mu!</span>
+          <span>🔗 Someone shared the live stream!</span>
         </div>
         <div class="message show">
           <div class="message-header">
             <span class="role-badge role-moderator">MOD</span>
-            <span class="username"
-              >🐾 sandisptd <span class="arrow">➜</span></span
-            >
+            <span class="username">ModeratorUser</span>
           </div>
-          <div class="message-body">bb berapa nih? 😸</div>
+          <div class="message-body">Welcome to the stream!</div>
         </div>
         <div class="message show">
           <div class="message-header">
             <span class="role-badge role-subscriber">SUB</span>
-            <span class="username"
-              >🐾 lingga_kece <span class="arrow">➜</span></span
-            >
+            <span class="username">SubscriberName</span>
           </div>
-          <div class="message-body">bg maaf telat masuk 🤭</div>
+          <div class="message-body">Great stream as always!</div>
         </div>
       </div>
     </div>
@@ -58,13 +60,8 @@
     <div id="giftWrapper">
       <div class="handle" id="giftHandle"></div>
       <div class="gift-message show">
-        <span class="username" style="color: #ff6ec7">UserGift</span> 🎁 sent
-        <span
-          class="gift-name"
-          style="color: #ffb400; text-shadow: 0 0 5px #fff, 0 0 10px #ffb400"
-          >Gold</span
-        >
-        x1!
+        <span class="username">GiftSender</span> sent 
+        <span class="gift-name">Diamond Gift</span> x3!
       </div>
     </div>
 
